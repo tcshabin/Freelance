@@ -33,6 +33,11 @@ Route::get('login/instagram','App\Http\Controllers\Auth\LoginController@redirect
 Route::get('login/instagram/callback', 'App\Http\Controllers\Auth\LoginController@instagramProviderCallback')->name('instagram.login.callback');
 // insta end
 
+// youtube start
+Route::get('login/youtube','App\Http\Controllers\Auth\LoginController@redirectToYoutubeProvider')->name('youtube.login');
+Route::get('login/youtube/callback', 'App\Http\Controllers\Auth\LoginController@YoutubeProviderCallback')->name('youtube.login.callback');
+// youtube end
+
 // facebook start
 Route::get('login/facebook','App\Http\Controllers\Auth\LoginController@redirectToFacebookProvider')->name('facebook.login');
 Route::get('login/facebook/callback', 'App\Http\Controllers\Auth\LoginController@FacebookProviderCallback')->name('facebook.login.callback');
