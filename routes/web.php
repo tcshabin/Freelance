@@ -45,6 +45,7 @@ Route::post('update_profile/{encrypted_id}','App\Http\Controllers\Auth\LoginCont
 Route::group(['prefix' => 'user', 'middleware' => 'auth'], function () {
 
     Route::get('dashboard', 'App\Http\Controllers\User\DashboardController@Dashboard');
+    
 });     
 
 // http://employee.demo/insta/callback
