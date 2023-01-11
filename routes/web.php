@@ -33,10 +33,15 @@ Route::get('login/instagram','App\Http\Controllers\Auth\LoginController@redirect
 Route::get('login/instagram/callback', 'App\Http\Controllers\Auth\LoginController@instagramProviderCallback')->name('instagram.login.callback');
 // insta end
 
-// youtube start
-Route::get('login/youtube','App\Http\Controllers\Auth\LoginController@redirectToYoutubeProvider')->name('youtube.login');
-Route::get('login/youtube/callback', 'App\Http\Controllers\Auth\LoginController@YoutubeProviderCallback')->name('youtube.login.callback');
-// youtube end
+// google start
+Route::get('login/google','App\Http\Controllers\Auth\LoginController@redirectToGoogleProvider')->name('google.login');
+Route::get('login/google/callback', 'App\Http\Controllers\Auth\LoginController@GoogleProviderCallback')->name('google.login.callback');
+// google end
+
+// // youtube start
+// Route::get('login/youtube','App\Http\Controllers\Auth\LoginController@redirectToYoutubeProvider')->name('youtube.login');
+// Route::get('login/youtube/callback', 'App\Http\Controllers\Auth\LoginController@YoutubeProviderCallback')->name('youtube.login.callback');
+// // youtube end
 
 // facebook start
 Route::get('login/facebook','App\Http\Controllers\Auth\LoginController@redirectToFacebookProvider')->name('facebook.login');

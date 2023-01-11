@@ -24,7 +24,7 @@
    <div id="validation-errors"></div>
    &nbsp;&nbsp;<a href="\login\instagram" class="btn btn-success">Instagram</a>
    &nbsp;&nbsp;<a href="\login\facebook" class="btn btn-warning">Facebook</a>
-   &nbsp;&nbsp;<a href="\login\youtube" class="btn btn-danger">Youtube</a>
+   &nbsp;&nbsp;<a href="\login\google" class="btn btn-danger">Youtube</a>
   </div>
  </body>
  </html>

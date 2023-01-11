@@ -10,6 +10,7 @@ use GuzzleHttp\Client;
 use App\Models\User;
 use App\Models\Facebook;
 use App\Models\Youtube;
+use App\Models\Google;
 use Auth;
 use Hash;
 use Validator;
@@ -79,28 +80,64 @@ class LoginController extends Controller
     }
     // Instagram End
 
-    // Youtube Start
+    // Google Start
 
-    public function redirectToYoutubeProvider(Request $request)
+    public function redirectToGoogleProvider() // exactly google login
+    {
+        return Socialite::driver('google')->redirect();
+
+        // if(Auth::check()){
+        //     return redirect('user/dashboard');
+        // }
+
+        // $name = 'fake'.User::max('id');
+        
+        // $data = array();
+        // $google = array();
+        // $data['username'] = $name;
+        // $data['password'] = Hash::make('123456');
+        // $data['email'] = $name.'@gmail.com';
+        // User::updateOrCreate(['email'   => $data['email']],$data);
+
+        // $user = User::whereEmail($data['email'])->select('id','phone')->first();
+
+        // $google['user_id'] = $user->id;
+        // $google['google_id'] = '23444';
+        // $google['access_token'] = 'wqd233d3';
+        // Google::updateOrCreate(['user_id'=>$google['user_id']],$google);
+
+        // if(is_null($user->phone)){
+        //     $redirect_url = '/update_profile/'.encrypt($user->id);
+        //     return redirect($redirect_url);
+        // }
+        // Auth::loginUsingId($user->id);
+        // return redirect('user/dashboard');
+    }
+
+
+    public function GoogleProviderCallback(Request $request)
     {
         if(Auth::check()){
             return redirect('user/dashboard');
         }
+
+        $google_user =  Socialite::driver('google')->stateless()->user();
+        //$userSocial->getEmail()
         $name = 'fake'.User::max('id');
         
         $data = array();
-        $youtube = array();
-        $data['username'] = $name;
+        $google = array();
+        $data['username'] = $google_user->getName();
         $data['password'] = Hash::make('123456');
-        $data['email'] = $name.'@gmail.com';
+        $data['email'] = $google_user->getEmail();
         User::updateOrCreate(['email'   => $data['email']],$data);
 
         $user = User::whereEmail($data['email'])->select('id','phone')->first();
 
-        $youtube['user_id'] = $user->id;
-        $youtube['youtube_id'] = '23444';
-        $youtube['access_token'] = 'wqd233d3';
-        Youtube::updateOrCreate(['user_id'=>$youtube['user_id']],$youtube);
+        $google['user_id'] = $user->id;
+        $google['google_id'] = '23444';
+        $google['access_token'] = 'wqd233d3';
+        Google::updateOrCreate(['user_id'=>$google['user_id']],$google);
 
         if(is_null($user->phone)){
             $redirect_url = '/update_profile/'.encrypt($user->id);
@@ -110,7 +147,7 @@ class LoginController extends Controller
         return redirect('user/dashboard');
 
     } 
-    // Youtube End
+    // Google End
 
     // Facebook Start
     public function redirectToFacebookProvider(Request $request)
