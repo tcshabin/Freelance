@@ -84,34 +84,34 @@ class LoginController extends Controller
 
     public function redirectToGoogleProvider() // exactly google login
     {
-        return Socialite::driver('google')->redirect();
+        //return Socialite::driver('google')->redirect();
 
-        // if(Auth::check()){
-        //     return redirect('user/dashboard');
-        // }
+        if(Auth::check()){
+            return redirect('user/dashboard');
+        }
 
-        // $name = 'fake'.User::max('id');
+        $name = 'fake'.User::max('id');
         
-        // $data = array();
-        // $google = array();
-        // $data['username'] = $name;
-        // $data['password'] = Hash::make('123456');
-        // $data['email'] = $name.'@gmail.com';
-        // User::updateOrCreate(['email'   => $data['email']],$data);
+        $data = array();
+        $google = array();
+        $data['username'] = $name;
+        $data['password'] = Hash::make('123456');
+        $data['email'] = $name.'@gmail.com';
+        User::updateOrCreate(['email'   => $data['email']],$data);
 
-        // $user = User::whereEmail($data['email'])->select('id','phone')->first();
+        $user = User::whereEmail($data['email'])->select('id','phone')->first();
 
-        // $google['user_id'] = $user->id;
-        // $google['google_id'] = '23444';
-        // $google['access_token'] = 'wqd233d3';
-        // Google::updateOrCreate(['user_id'=>$google['user_id']],$google);
+        $google['user_id'] = $user->id;
+        $google['google_id'] = '23444';
+        $google['access_token'] = 'wqd233d3';
+        Google::updateOrCreate(['user_id'=>$google['user_id']],$google);
 
-        // if(is_null($user->phone)){
-        //     $redirect_url = '/update_profile/'.encrypt($user->id);
-        //     return redirect($redirect_url);
-        // }
-        // Auth::loginUsingId($user->id);
-        // return redirect('user/dashboard');
+        if(is_null($user->phone)){
+            $redirect_url = '/update_profile/'.encrypt($user->id);
+            return redirect($redirect_url);
+        }
+        Auth::loginUsingId($user->id);
+        return redirect('user/dashboard');
     }
 
 
