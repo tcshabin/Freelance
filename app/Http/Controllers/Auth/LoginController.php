@@ -18,183 +18,26 @@ use Validator;
 class LoginController extends Controller
 {
   
-    public function Login(){
+    public function Login(Request $request){
 
         if(Auth::check()){
             return redirect('user/dashboard');
         }
-
+        if ($request->isMethod('post')) {
+            $user = User::whereEmail($request->email)->select('id','password')->first(); 
+            if(isset($user->id)){
+                if (!Hash::check($request->password, $user->password)){
+                    return redirect()->back()->withErrors('These credentials do not match our records');
+                }
+                Auth::loginUsingId($user->id);
+                return redirect('user/dashboard');
+            }
+            
+        }
         $title = 'Login-Page';
         return view('auth.login',compact('title'));
     }
-    // Instagram Start
-    public function redirectToInstagramProvider()
-    {
-        $appId = config('services.instagram.client_id');
-        $redirectUri = urlencode(config('services.instagram.redirect'));
-        return redirect()->to("https://api.instagram.com/oauth/authorize?app_id={$appId}&redirect_uri={$redirectUri}&scope=user_profile,user_media&response_type=code");
-    }
-    
-    public function instagramProviderCallback(Request $request)
-    {
-        $code = $request->code;
-        if (empty($code)) return redirect()->route('home')->with('error', 'Failed to login with Instagram.');
-    
-        $appId = config('services.instagram.client_id');
-        $secret = config('services.instagram.client_secret');
-        $redirectUri = config('services.instagram.redirect');
-    
-        $client = new Client();
-        // Get access token
-        $response = $client->request('POST', 'https://api.instagram.com/oauth/access_token', [
-            'form_params' => [
-                'app_id' => $appId,
-                'app_secret' => $secret,
-                'grant_type' => 'authorization_code',
-                'redirect_uri' => $redirectUri,
-                'code' => $code,
-            ]
-        ]);
-    
-        if ($response->getStatusCode() != 200) {
-            return redirect()->route('home')->with('error', 'Unauthorized login to Instagram.');
-        }
-    
-        $content = $response->getBody()->getContents();
-        $content = json_decode($content);
-    
-        $accessToken = $content->access_token;
-        $userId = $content->user_id;
-    
-        // Get user info
-        $response = $client->request('GET', "https://graph.instagram.com/me?fields=id,username,account_type&access_token={$accessToken}");
-    
-        $content = $response->getBody()->getContents();
-        $oAuth = json_decode($content);
-    
-        // Get instagram user name 
-        $username = $oAuth->username;
-    
-        dd($oAuth);
-        // do your code here
-    }
-    // Instagram End
-
-    // Google Start
-
-    public function redirectToGoogleProvider() // exactly google login
-    {
-        //return Socialite::driver('google')->redirect();
-
-        if(Auth::check()){
-            return redirect('user/dashboard');
-        }
-
-        $name = 'fake'.User::max('id');
-        
-        $data = array();
-        $google = array();
-        $data['username'] = $name;
-        $data['password'] = Hash::make('123456');
-        $data['email'] = $name.'@gmail.com';
-        User::updateOrCreate(['email'   => $data['email']],$data);
-
-        $user = User::whereEmail($data['email'])->select('id','phone')->first();
-
-        $google['user_id'] = $user->id;
-        $google['google_id'] = '23444';
-        $google['access_token'] = 'wqd233d3';
-        Google::updateOrCreate(['user_id'=>$google['user_id']],$google);
-
-        if(is_null($user->phone)){
-            $redirect_url = '/update_profile/'.encrypt($user->id);
-            return redirect($redirect_url);
-        }
-        Auth::loginUsingId($user->id);
-        return redirect('user/dashboard');
-    }
-
-
-    public function GoogleProviderCallback(Request $request)
-    {
-        if(Auth::check()){
-            return redirect('user/dashboard');
-        }
-
-        $google_user =  Socialite::driver('google')->stateless()->user();
-        //$userSocial->getEmail()
-        $name = 'fake'.User::max('id');
-        
-        $data = array();
-        $google = array();
-        $data['username'] = $google_user->getName();
-        $data['password'] = Hash::make('123456');
-        $data['email'] = $google_user->getEmail();
-        User::updateOrCreate(['email'   => $data['email']],$data);
-
-        $user = User::whereEmail($data['email'])->select('id','phone')->first();
-
-        $google['user_id'] = $user->id;
-        $google['google_id'] = '23444';
-        $google['access_token'] = 'wqd233d3';
-        Google::updateOrCreate(['user_id'=>$google['user_id']],$google);
-
-        if(is_null($user->phone)){
-            $redirect_url = '/update_profile/'.encrypt($user->id);
-            return redirect($redirect_url);
-        }
-        Auth::loginUsingId($user->id);
-        return redirect('user/dashboard');
-
-    } 
-    // Google End
-
-    // Facebook Start
-    public function redirectToFacebookProvider(Request $request)
-    {
-        if(Auth::check()){
-            return redirect('user/dashboard');
-        }
-        return Socialite::driver('facebook')->redirect();
-
-    } 
-
-    public function FacebookProviderCallback(Request $request)
-    {
-        if(Auth::check()){
-            return redirect('user/dashboard');
-        }
-
-        try {
-            $facebook_user = Socialite::driver('facebook')->user();
-            $data = array();
-            $facebook = array();
-            $data['username'] = $facebook_user->getName();
-            $data['password'] = Hash::make('123456');
-            $data['email'] = $facebook_user->getEmail();
-
-            User::updateOrCreate(['email'   => $data['email']],$data);
-            $user = User::whereEmail($data['email'])->select('id','phone')->first();
-            
-            $facebook['user_id'] = $user->id;
-            $facebook['facebook_id'] = $facebook_user->getId();
-
-            Facebook::updateOrCreate(['user_id'=>$facebook['user_id']],$facebook);
-
-            if(is_null($user->phone)){
-                $redirect_url = '/update_profile/'.encrypt($user->id);
-                return redirect($redirect_url);
-            }
-            Auth::loginUsingId($user->id);
-            return redirect('user/dashboard');
-      
-        } catch (\Throwable $th) {
-               throw $th;
-               return redirect('/login');
-        }
-    }
-
-    // Facebook End
+   
     public function UpdateProfile(Request $request,$encrypted_id){
 
         if(Auth::check()){

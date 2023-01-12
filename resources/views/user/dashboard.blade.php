@@ -18,9 +18,13 @@
  <body>
   <br />
   <div class="container box">
-   <h3 align="center"><span style="color:red;">Dashboard
+   <h3 align="center"><span style="color:red;">Authenticate Your Social Profiles
     
    </h3><br />
+
+   &nbsp;&nbsp;<a href="\user\instagram" class="btn btn-success">Instagram</a>
+   &nbsp;&nbsp;<a href="\user\facebook" class="btn btn-warning">Facebook</a>
+   &nbsp;&nbsp;<a href="\user\google" class="btn btn-danger">Youtube</a>
   
    &nbsp;&nbsp;<a href="\logout" class="btn btn-success">Logout</a>
   
