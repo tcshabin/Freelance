@@ -21,10 +21,26 @@
    <h3 align="center"><span style="color:red;">Multi-Login
     
    </h3><br />
-   <div id="validation-errors"></div>
-   &nbsp;&nbsp;<a href="\login\instagram" class="btn btn-success">Instagram</a>
-   &nbsp;&nbsp;<a href="\login\facebook" class="btn btn-warning">Facebook</a>
-   &nbsp;&nbsp;<a href="\login\google" class="btn btn-danger">Youtube</a>
+    @if ($errors->any())
+        @foreach ($errors->all() as $error)
+            <div>{{$error}}</div>
+        @endforeach
+    @endif
+    <form method="post" enctype="multipart/form-data" action="{{URL('/login')}}" >
+    <input type="hidden" name="_token"  id="_token" value="{{csrf_token()}}">
+        
+        <div class="form-group">
+            <label>Email</label>
+            <input type="email" name="email" id="email" class="form-control" required=""/>
+        </div>
+        <div class="form-group">
+            <label>Password</label>
+            <input type="password" name="password" id="password" class="form-control" required=""/>
+        </div>
+        <div class="form-group pull-right">
+            <input type="submit" name="create" class="btn btn-primary" value="Login" />
+        </div>
+    </form>
   </div>
  </body>
  </html>
