@@ -38,7 +38,7 @@
             <input type="password" name="password" id="password" class="form-control" required=""/>
         </div>
         <div class="form-group pull-right">
-            <input type="submit" name="create" class="btn btn-primary" value="Login" />
+           <button type="submit" class="btn btn-success">Login</button>
         </div>
     </form>
   </div>

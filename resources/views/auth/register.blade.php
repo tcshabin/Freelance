@@ -49,7 +49,7 @@
             <input type="password" name="confirm_password" id="confirm_password" class="form-control" required=""/>
         </div>
         <div class="form-group pull-right">
-            <input type="submit" name="create" class="btn btn-primary" value="Register" />
+          <button type="submit" class="btn btn-primary">Register</button>
         </div>
     </form>
   </div>
