@@ -18,9 +18,8 @@
  <body>
   <br />
   <div class="container box">
-   <h3 align="center"><span style="color:red;">Register
-    
-   </h3><br />
+   <h3 align="center"><span style="color:blue;">Hire a Fame</h3>
+   <h4 align="center"><span style="color:black;">Thank You For Choosing Us!</span></h4>
     @if ($errors->any())
         @foreach ($errors->all() as $error)
             <div>{{$error}}</div>
