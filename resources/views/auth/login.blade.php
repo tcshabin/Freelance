@@ -18,9 +18,8 @@
  <body>
   <br />
   <div class="container box">
-   <h3 align="center"><span style="color:red;">Multi-Login
-    
-   </h3><br />
+   <h3 align="center"><span style="color:blue;">Hire a Fame</h3>
+   <h4 align="center"><span style="color:black;">Welcome back, good to see you again!,</span></h4>
     @if ($errors->any())
         @foreach ($errors->all() as $error)
             <div>{{$error}}</div>
@@ -36,6 +35,12 @@
         <div class="form-group">
             <label>Password</label>
             <input type="password" name="password" id="password" class="form-control" required=""/>
+        </div>
+        <div class="form-check">
+            <input type="checkbox" class="form-check-input" id="remember">
+            <label class="form-check-label" for="remember">Remember Me</label>
+
+            <a href="#" class="pull-right">Forgot Password ?</a>
         </div>
         <div class="form-group">
            <button type="submit" class="btn btn-success btn-lg btn-block">Login</button>
