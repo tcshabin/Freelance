@@ -48,10 +48,13 @@
             <label>Confirm Password</label>
             <input type="password" name="confirm_password" id="confirm_password" class="form-control" required=""/>
         </div>
-        <div class="form-group pull-right">
-          <button type="submit" class="btn btn-primary">Register</button>
+        <div class="form-group">
+          <button type="submit" class="btn btn-primary btn-lg btn-block">Register</button>
         </div>
     </form>
+        <div class="form-group">
+            <h4 style="text-align:center;">Do you have already an account?<a href="/login">Login now</a></h4>
+        </div>
   </div>
  </body>
  </html>

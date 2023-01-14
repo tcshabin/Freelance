@@ -37,10 +37,13 @@
             <label>Password</label>
             <input type="password" name="password" id="password" class="form-control" required=""/>
         </div>
-        <div class="form-group pull-right">
-           <button type="submit" class="btn btn-success">Login</button>
+        <div class="form-group">
+           <button type="submit" class="btn btn-success btn-lg btn-block">Login</button>
         </div>
     </form>
+        <div class="form-group">
+            <h4 style="text-align:center;">Don't have an account?<a href="/register">Sign up now</a></h4>
+        </div>
   </div>
  </body>
  </html>
