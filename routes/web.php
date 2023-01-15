@@ -14,7 +14,9 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', function () {
-    return redirect('/register');
+    //return redirect('/register');
+    \App\Models\User::create(['username'=>'check','email'=>'qqw@gmail.com','password'=>123456]);
+    dd('its working');
 });
 Route::get('register','App\Http\Controllers\Auth\RegisterController@Register')->name('register');
 Route::post('register','App\Http\Controllers\Auth\RegisterController@Register');
