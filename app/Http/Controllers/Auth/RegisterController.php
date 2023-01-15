@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use Auth;
 use Validator;
+use Hash;
 
 class RegisterController extends Controller
 {
@@ -36,7 +37,9 @@ class RegisterController extends Controller
             if ($validator->fails()) {           
                 return redirect()->back()->withErrors($validator);         
             }
-            $data = $request->only('username','phone','email','password');
+            
+            $data = $request->only('username','phone','email');
+            $data['password'] = Hash::make($request->password);
             $user = User::Create($data);
             if(isset($user->id)){
                 Auth::loginUsingId($user->id);

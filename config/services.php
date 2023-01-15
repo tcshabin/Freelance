@@ -43,6 +43,8 @@ return [
         'client_id' =>  env('GOOGLE_CLIENT_ID'), 
         'client_secret' => env('GOOGLE_CLIENT_SECRET'), 
         'redirect' => env('GOOGLE_REDIRECT'), 
+        'api_key' =>env('GOOGLE_API_KEY'),
+        'search_endpoint' =>env('SEARCH_ENDPOINT'),
    ],
 
 ];

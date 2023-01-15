@@ -11,6 +11,9 @@ use App\Models\Facebook;
 use App\Models\Youtube;
 use App\Models\Google;
 use Auth;
+use File;
+use Http;
+use Google_Client;
 
 class DashboardController extends Controller
 {
@@ -93,11 +96,9 @@ class DashboardController extends Controller
 
     public function GoogleProviderCallback(Request $request)
     {
-        if(Auth::check()){
-            return redirect('user/dashboard');
-        }
-
         $google_user =  Socialite::driver('google')->stateless()->user();
+       
+        //dd($google_user);
         //$userSocial->getEmail()
         $name = 'fake'.User::max('id');
         
@@ -111,7 +112,119 @@ class DashboardController extends Controller
         $google['access_token'] = 'wqd233d3';
         Google::updateOrCreate(['user_id'=>$google['user_id']],$google);
 
-        dd('needs of youtube api');
+        $api_key = config('services.google.api_key');
+        $client_id = config('services.google.client_id');
+
+        $apiKey = $api_key;
+        $channelId = 'UCsUMdB77PBRR0bjWjOyrAVA';
+        $resultsNumber = 10;
+
+        $channel_id = $channelId;
+        $api_key = $api_key;
+        $api_response = file_get_contents('https://www.googleapis.com/youtube/v3/channels?part=statistics&id='.$channel_id.'&fields=items/statistics/subscriberCount&key='.$api_key);
+        $api_response_decoded = json_decode($api_response, true);
+        echo $api_response_decoded['items'][0]['statistics']['subscriberCount'];
+           dd(11,$api_response_decoded);     
+        $scope = urlencode('https://www.googleapis.com/auth/youtube.readonly');
+        //dd($scope)
+        $requestUrl = 'https://youtube.googleapis.com/youtube/v3/channels?part=snippet&mine=true&key=AIzaSyA2E5FFRuCCtrpEhDnd4UajpqGhW6-RAi0&SCOPES='.$scope;
+        // if( function_exists( file_get_contents ) ) {
+        //     $response = file_get_contents( $requestUrl );
+        //     $json_response = json_decode( $response, TRUE );
+             
+        // } else {
+            // No file_get_contents? Use cURL then...
+            $authorization = 'Authorization: Bearer '.$google_user->token;
+            if( function_exists( 'curl_version' ) ) {
+                $curl = curl_init();
+                curl_setopt($curl, CURLOPT_HTTPHEADER, array('Content-Type: application/json' , $authorization ));
+                curl_setopt( $curl, CURLOPT_URL, $requestUrl );
+                curl_setopt( $curl, CURLOPT_RETURNTRANSFER, 1 );
+                curl_setopt( $curl, CURLOPT_SSL_VERIFYPEER, TRUE );
+                $response = curl_exec( $curl );
+                curl_close( $curl );
+                $json_response = json_decode( $response, TRUE );
+                 
+            } else {
+                // Unable to get response if both file_get_contents and cURL fail
+                $json_response = NULL;
+            }
+        //}
+        dd($json_response);
+        $curl = curl_init();
+        $scope = urlencode('https://www.googleapis.com/auth/youtube.readonly');
+        //dd($scope);
+
+        curl_setopt_array($curl, array(
+        CURLOPT_URL => 'https://youtube.googleapis.com/youtube/v3/channels?part=snippet&mine=true&key=AIzaSyA2E5FFRuCCtrpEhDnd4UajpqGhW6-RAi0',
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_ENCODING => '',
+        CURLOPT_MAXREDIRS => 10,
+        CURLOPT_TIMEOUT => 0,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+        CURLOPT_CUSTOMREQUEST => 'GET',
+        CURLOPT_HTTPHEADER => array(
+            'Accept: application/json',
+            'Authorization: Bearer '.$google_user->token,
+        ),
+        ));
+
+        $response = curl_exec($curl);
+
+        curl_close($curl);
+         dd($response);
+
+        $ch = curl_init();
+
+        // curl_setopt($ch, CURLOPT_URL, 'https://youtube.googleapis.com/youtube/v3/search?part=snippet&key='.$api_key);
+        // curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        // curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
+
+        // curl_setopt($ch, CURLOPT_ENCODING, 'gzip, deflate');
+
+        // $headers = array();
+        // $headers[] = 'Accept: application/json';
+        // curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+
+        // $result = curl_exec($ch);
+        
+        $ch = curl_init();
+
+        curl_setopt($ch, CURLOPT_URL, 'https://youtube.googleapis.com/youtube/v3/subscriptions?part=snippet&channelId=UCsUMdB77PBRR0bjWjOyrAVA&key='.$api_key);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
+
+        curl_setopt($ch, CURLOPT_ENCODING, 'gzip, deflate');
+
+        $headers = array();
+        $headers[] = 'Authorization: Bearer '.$client_id;
+        $headers[] = 'Accept: application/json';
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+
+        $result = curl_exec($ch);
+        dd($result);
+        if (curl_errno($ch)) {
+            echo 'Error:' . curl_error($ch);
+        }
+        curl_close($ch);
+
+      
+        // $part = 'snippet';
+        // $country = 'BD';
+        // $apiKey = config('services.google.api_key');
+        // $maxResults = 12;
+        // $youTubeEndPoint = config('services.google.search_endpoint');
+        // $type = 'video'; // You can select any one or all, we are getting only videos
+        // $keywords='';
+        // $url = "$youTubeEndPoint?part=$part&maxResults=$maxResults&regionCode=$country&type=$type&key=$apiKey&q=$keywords";
+        // $response = Http::get($url);
+        // $results = json_decode($response);
+        // // We will create a json file to see our response
+        // File::put(storage_path() . '/app/public/results.json', $response->body());
+        // return $results;
+
+        // dd('needs of youtube api');
 
     } 
     // Google End
