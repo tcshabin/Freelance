@@ -5,7 +5,7 @@
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
-        'reference' => '366f7483d7788de7af0ed272191be24c84fbb51f',
+        'reference' => '9c53c0fe352aae048c97b5d3c422019a6c2646fe',
         'name' => 'laravel/laravel',
         'dev' => true,
     ),
@@ -463,7 +463,7 @@
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
-            'reference' => '366f7483d7788de7af0ed272191be24c84fbb51f',
+            'reference' => '9c53c0fe352aae048c97b5d3c422019a6c2646fe',
             'dev_requirement' => false,
         ),
         'laravel/passport' => array(
@@ -1180,6 +1180,15 @@
             'aliases' => array(),
             'reference' => 'c6c1022351a901512170118436c764e473f6de8c',
             'dev_requirement' => true,
+        ),
+        'socialiteproviders/instagram' => array(
+            'pretty_version' => '5.0.0',
+            'version' => '5.0.0.0',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../socialiteproviders/instagram',
+            'aliases' => array(),
+            'reference' => 'c3ef6b6b268de6abf36cc3253b5c6a87255a3564',
+            'dev_requirement' => false,
         ),
         'socialiteproviders/manager' => array(
             'pretty_version' => 'v4.2.0',
