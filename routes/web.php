@@ -1,7 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -13,10 +14,10 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', function () {
-    //return redirect('/register');
-    \App\Models\User::create(['username'=>'check','email'=>'qqw@gmail.com','password'=>123456]);
-    dd('its working');
+Route::get('/', function (Request $request) {
+    return redirect('/register');
+    //Log::info('sss');
+  
 });
 Route::get('register','App\Http\Controllers\Auth\RegisterController@Register')->name('register');
 Route::post('register','App\Http\Controllers\Auth\RegisterController@Register');
@@ -45,10 +46,16 @@ Route::group(['prefix' => 'user', 'middleware' => 'auth'], function () {
     Route::get('google','App\Http\Controllers\User\DashboardController@redirectToGoogleProvider')->name('google.user');
     Route::get('google/callback', 'App\Http\Controllers\User\DashboardController@GoogleProviderCallback')->name('google.user.callback');
     // google end
+
+    // youtube start
+    Route::get('youtube/summary/{channel_id}', 'App\Http\Controllers\User\DashboardController@YoutubeSummary')->name('youtube.user.summary');
+    Route::post('youtube/channel_call_back', 'App\Http\Controllers\User\DashboardController@ChannelCallback')->name('youtube.user.callback');
+    // youtube end
     
     // facebook start
     Route::get('facebook','App\Http\Controllers\User\DashboardController@redirectToFacebookProvider')->name('facebook.user');
     Route::get('facebook/callback', 'App\Http\Controllers\User\DashboardController@FacebookProviderCallback')->name('facebook.user.callback');
+    Route::get('facebook/summary/{facebook_id}', 'App\Http\Controllers\User\DashboardController@FacebookSummary')->name('facebook.user.summary');
     // facebook end
 
 });     

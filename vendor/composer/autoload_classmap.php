@@ -26,6 +26,7 @@ return array(
     'App\\Models\\Google' => $baseDir . '/app/Models/Google.php',
     'App\\Models\\Instagram' => $baseDir . '/app/Models/Instagram.php',
     'App\\Models\\User' => $baseDir . '/app/Models/User.php',
+    'App\\Models\\Videos' => $baseDir . '/app/Models/Videos.php',
     'App\\Models\\Youtube' => $baseDir . '/app/Models/Youtube.php',
     'App\\Providers\\AppServiceProvider' => $baseDir . '/app/Providers/AppServiceProvider.php',
     'App\\Providers\\AuthServiceProvider' => $baseDir . '/app/Providers/AuthServiceProvider.php',

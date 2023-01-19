@@ -10,6 +10,8 @@ use App\Models\User;
 use App\Models\Facebook;
 use App\Models\Youtube;
 use App\Models\Google;
+use App\Models\Videos;
+use Google\Service\YouTube as YouTubeClient;
 use Auth;
 use File;
 use Http;
@@ -32,19 +34,121 @@ class DashboardController extends Controller
         $title = 'Dashboard';
         return view('user.dashboard',compact('title'));
     }
+    public function YoutubeSummary($channel_id){
+
+        $api_key = config('services.google.api_key');
+        // $channel_id = Youtube::whereUser_id(AUth::id())->latest()->value('channel_id');
+        if(!is_null($channel_id)){
+            $latest_videos_ids = self::VideosId($api_key,$channel_id,7); //get latest 7 videos_id
+            $latest_videos_details = self::VideosDetails($channel_id,$api_key,$latest_videos_ids);
+            $new_videos = Videos::whereChannel_id($channel_id)->latest()->take(7)->get();
+        }
+        if(!isset($new_videos)){
+            $new_videos = array();
+        }
+        $channels = Youtube::whereChannel_id($channel_id)->first();
+        return view('user.youtube_summary',compact('new_videos','channels'));
+       
+    }
+    public function FacebookSummary($facebook_id){
+
+        dd('facebook_id:'.$facebook_id);
+        // $api_key = config('services.google.api_key');
+        // // $channel_id = Youtube::whereUser_id(AUth::id())->latest()->value('channel_id');
+        // if(!is_null($channel_id)){
+        //     $latest_videos_ids = self::VideosId($api_key,$channel_id,7); //get latest 7 videos_id
+        //     $latest_videos_details = self::VideosDetails($channel_id,$api_key,$latest_videos_ids);
+        //     $new_videos = Videos::whereChannel_id($channel_id)->latest()->take(7)->get();
+        // }
+        // if(!isset($new_videos)){
+        //     $new_videos = array();
+        // }
+        // $channels = Youtube::whereChannel_id($channel_id)->first();
+        // return view('user.youtube_summary',compact('new_videos','channels'));
+       
+    }
+    public function VideosId($api_key,$channel_id,$maxresult=1000){
+
+        $videoids = array();
+        $curl = curl_init();
+        curl_setopt_array($curl, array(
+        CURLOPT_URL => 'https://www.googleapis.com/youtube/v3/search?key='.$api_key.'&channelId='.$channel_id.'&maxResults='.$maxresult.'&part=snippet,id&order=date&maxResults=7',
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_ENCODING => '',
+        CURLOPT_MAXREDIRS => 10,
+        CURLOPT_TIMEOUT => 0,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+        CURLOPT_CUSTOMREQUEST => 'GET',
+        ));
+
+        $response = curl_exec($curl);
+
+        curl_close($curl);
+        
+        $responce_card = json_decode($response,true);
+        if(isset($responce_card['items'])){
+            foreach($responce_card['items'] as $video){
+                if(isset($video['id']['videoId'])){
+                    $videoids[] = $video['id']['videoId'];
+                }
+            }
+        }
+        $list = implode(',', $videoids);
+        return $list;
+    }
+    public function VideosDetails($channel_id,$api_key,$videos_ids){
+
+        $statistics = array();
+        $curl = curl_init();
+
+        curl_setopt_array($curl, array(
+        CURLOPT_URL => 'https://youtube.googleapis.com/youtube/v3/videos?part=statistics&key='.$api_key.'&id='.$videos_ids,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_ENCODING => '',
+        CURLOPT_MAXREDIRS => 10,
+        CURLOPT_TIMEOUT => 0,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+        CURLOPT_CUSTOMREQUEST => 'GET',
+        ));
+
+        $response = curl_exec($curl);
+
+        curl_close($curl);
+        
+        $responce_card = json_decode($response,true);
+        if(isset($responce_card['items'])){
+            foreach($responce_card['items'] as $videodetails){
+                if(isset($videodetails['id']) && isset($videodetails['statistics'])){//['statistics']
+                    $statistics[$videodetails['id']] = $videodetails['statistics'];
+                    
+                }
+            }
+        }
+       
+        if(!empty($statistics)){
+            foreach ($statistics as $key => $value) {
+                Videos::updateOrCreate(['video_id'=>$key],['type'=>'youtube','view_count'=>$value['viewCount'],'like_count'=>$value['likeCount'],'video_id'=>$key,'channel_id'=>$channel_id]);
+            }
+        }
+       return $statistics;
+    }
 
      // Instagram Start
     public function redirectToInstagramProvider()
     {
+        
         $appId = config('services.instagram.client_id');
         $redirectUri = urlencode(config('services.instagram.redirect'));
+        
         return redirect()->to("https://api.instagram.com/oauth/authorize?app_id={$appId}&redirect_uri={$redirectUri}&scope=user_profile,user_media&response_type=code");
     }
     
     public function instagramProviderCallback(Request $request)
     {
         $code = $request->code;
-        if (empty($code)) return redirect()->route('home')->with('error', 'Failed to login with Instagram.');
+        if (empty($code)) return redirect('user/dashboard')->with('error', 'Failed to login with Instagram.');
     
         $appId = config('services.instagram.client_id');
         $secret = config('services.instagram.client_secret');
@@ -90,73 +194,53 @@ class DashboardController extends Controller
 
     public function redirectToGoogleProvider() // exactly google login
     {
-        return Socialite::driver('google')->redirect();
+        return Socialite::driver('google')->scopes(['https://www.googleapis.com/auth/youtube.readonly'])->redirect();
     }
 
+    public function ChannelCallback(Request $request)
+    {
+        $data = array();
+        $data['user_id'] = Auth::id();
+        $data['channel_id'] = null;
+        $data['channel_response'] = json_encode($request->all());
+        if(!empty($data['channel_response'])){
+            $result = json_decode($data['channel_response'],true);
+            if(isset($result['body'])){
+                $body =  json_decode($result['body'],true);
+                $data['channel_id'] = isset($body['items'][0]['id']) ? $body['items'][0]['id'] : null;
+                $data['subscribers_count'] = isset($body['items'][0]['statistics']['subscriberCount']) ? $body['items'][0]['statistics']['subscriberCount'] : null;
+                $data['video_count'] = isset($body['items'][0]['statistics']['videoCount']) ? $body['items'][0]['statistics']['videoCount'] : null;
+            }
+            
+            Youtube::updateOrCreate(['user_id'=>Auth::id(),'channel_id'=>$data['channel_id']],$data);
+            
+            return response()->json(['status'=>true,'channel_id'=>$data['channel_id'],'message' => 'Response Created Sucessfully..!']);
+        }
+        return response()->json(['status'=>false,'message' => 'No Response']);
+    } 
 
-    public function GoogleProviderCallback(Request $request)
+
+    public function GoogleProviderCallback(Request $request) //youtube response geting function
     {
         $google_user =  Socialite::driver('google')->stateless()->user();
-       
-        //dd($google_user);
-        //$userSocial->getEmail()
-        $name = 'fake'.User::max('id');
-        
-        $data = array();
-        $google = array();
-        // $data['username'] = $google_user->getName();
-        // $data['email'] = $google_user->getEmail();
-      
+
+        if(!isset($google_user->token)){
+            return redirect()->back('/user/dashboard')->withErrors('Token Mismatch');
+        }
+        // $google_data['username'] = $google_user->getName();
+        // $google_data['email'] = $google_user->getEmail();
         $google['user_id'] = Auth::id();
-        $google['google_id'] = '23444';
-        $google['access_token'] = 'wqd233d3';
+        $google['google_id'] = $google_user->getId();
+        $google['access_token'] = $google_user->token;
+
         Google::updateOrCreate(['user_id'=>$google['user_id']],$google);
-
+      
         $api_key = config('services.google.api_key');
-        $client_id = config('services.google.client_id');
-
-        $apiKey = $api_key;
-        $channelId = 'UCsUMdB77PBRR0bjWjOyrAVA';
-        $resultsNumber = 10;
-
-        $channel_id = $channelId;
-        $api_key = $api_key;
-        $api_response = file_get_contents('https://www.googleapis.com/youtube/v3/channels?part=statistics&id='.$channel_id.'&fields=items/statistics/subscriberCount&key='.$api_key);
-        $api_response_decoded = json_decode($api_response, true);
-        echo $api_response_decoded['items'][0]['statistics']['subscriberCount'];
-           dd(11,$api_response_decoded);     
-        $scope = urlencode('https://www.googleapis.com/auth/youtube.readonly');
-        //dd($scope)
-        $requestUrl = 'https://youtube.googleapis.com/youtube/v3/channels?part=snippet&mine=true&key=AIzaSyA2E5FFRuCCtrpEhDnd4UajpqGhW6-RAi0&SCOPES='.$scope;
-        // if( function_exists( file_get_contents ) ) {
-        //     $response = file_get_contents( $requestUrl );
-        //     $json_response = json_decode( $response, TRUE );
-             
-        // } else {
-            // No file_get_contents? Use cURL then...
-            $authorization = 'Authorization: Bearer '.$google_user->token;
-            if( function_exists( 'curl_version' ) ) {
-                $curl = curl_init();
-                curl_setopt($curl, CURLOPT_HTTPHEADER, array('Content-Type: application/json' , $authorization ));
-                curl_setopt( $curl, CURLOPT_URL, $requestUrl );
-                curl_setopt( $curl, CURLOPT_RETURNTRANSFER, 1 );
-                curl_setopt( $curl, CURLOPT_SSL_VERIFYPEER, TRUE );
-                $response = curl_exec( $curl );
-                curl_close( $curl );
-                $json_response = json_decode( $response, TRUE );
-                 
-            } else {
-                // Unable to get response if both file_get_contents and cURL fail
-                $json_response = NULL;
-            }
-        //}
-        dd($json_response);
+        
         $curl = curl_init();
-        $scope = urlencode('https://www.googleapis.com/auth/youtube.readonly');
-        //dd($scope);
 
         curl_setopt_array($curl, array(
-        CURLOPT_URL => 'https://youtube.googleapis.com/youtube/v3/channels?part=snippet&mine=true&key=AIzaSyA2E5FFRuCCtrpEhDnd4UajpqGhW6-RAi0',
+        CURLOPT_URL => 'https://content-youtube.googleapis.com/youtube/v3/channels?mine=true&part=snippet,statistics&key='.$api_key,
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_ENCODING => '',
         CURLOPT_MAXREDIRS => 10,
@@ -165,74 +249,42 @@ class DashboardController extends Controller
         CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
         CURLOPT_CUSTOMREQUEST => 'GET',
         CURLOPT_HTTPHEADER => array(
-            'Accept: application/json',
             'Authorization: Bearer '.$google_user->token,
+            'x-origin: https://explorer.apis.google.com'
         ),
         ));
-
-        $response = curl_exec($curl);
-
-        curl_close($curl);
-         dd($response);
-
-        $ch = curl_init();
-
-        // curl_setopt($ch, CURLOPT_URL, 'https://youtube.googleapis.com/youtube/v3/search?part=snippet&key='.$api_key);
-        // curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        // curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
-
-        // curl_setopt($ch, CURLOPT_ENCODING, 'gzip, deflate');
-
-        // $headers = array();
-        // $headers[] = 'Accept: application/json';
-        // curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-
-        // $result = curl_exec($ch);
         
-        $ch = curl_init();
+        $response = curl_exec($curl);
+        
+        curl_close($curl);
+       
+        $data = array();
+        $data['user_id'] = Auth::id();
+        $data['channel_id'] = null;
+        $data['channel_response'] = $response;
+        if(!empty($data['channel_response'])){
+            $result = json_decode($data['channel_response'],true);
+           
+            if(isset($result['items'])){
+                $data['channel_id'] = isset($result['items'][0]['id']) ? $result['items'][0]['id'] : null;
+                $data['subscribers_count'] = isset($result['items'][0]['statistics']['subscriberCount']) ? $result['items'][0]['statistics']['subscriberCount'] : null;
+                $data['video_count'] = isset($result['items'][0]['statistics']['videoCount']) ? $result['items'][0]['statistics']['videoCount'] : null;
+            }
+            
+            Youtube::updateOrCreate(['user_id'=>Auth::id(),'channel_id'=>$data['channel_id']],$data);
 
-        curl_setopt($ch, CURLOPT_URL, 'https://youtube.googleapis.com/youtube/v3/subscriptions?part=snippet&channelId=UCsUMdB77PBRR0bjWjOyrAVA&key='.$api_key);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
-
-        curl_setopt($ch, CURLOPT_ENCODING, 'gzip, deflate');
-
-        $headers = array();
-        $headers[] = 'Authorization: Bearer '.$client_id;
-        $headers[] = 'Accept: application/json';
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-
-        $result = curl_exec($ch);
-        dd($result);
-        if (curl_errno($ch)) {
-            echo 'Error:' . curl_error($ch);
+            $url = 'user/youtube/summary/'.$data['channel_id'];
+            return redirect($url);
         }
-        curl_close($ch);
-
-      
-        // $part = 'snippet';
-        // $country = 'BD';
-        // $apiKey = config('services.google.api_key');
-        // $maxResults = 12;
-        // $youTubeEndPoint = config('services.google.search_endpoint');
-        // $type = 'video'; // You can select any one or all, we are getting only videos
-        // $keywords='';
-        // $url = "$youTubeEndPoint?part=$part&maxResults=$maxResults&regionCode=$country&type=$type&key=$apiKey&q=$keywords";
-        // $response = Http::get($url);
-        // $results = json_decode($response);
-        // // We will create a json file to see our response
-        // File::put(storage_path() . '/app/public/results.json', $response->body());
-        // return $results;
-
-        // dd('needs of youtube api');
-
+        return redirect()->back('/user/dashboard')->withErrors('No Channel Found/Something Went Wrong');
+        
     } 
     // Google End
 
     // Facebook Start
     public function redirectToFacebookProvider(Request $request)
     {
-        return Socialite::driver('facebook')->redirect();
+       return Socialite::driver('facebook')->redirect();
 
     } 
 
@@ -246,12 +298,11 @@ class DashboardController extends Controller
             //$data['email'] = $facebook_user->getEmail();
             $facebook['user_id'] = Auth::id();
             $facebook['facebook_id'] = $facebook_user->getId();
-
+            
+            $facebook['login_response'] = json_encode($facebook_user);
             Facebook::updateOrCreate(['user_id'=>$facebook['user_id']],$facebook);
-
-            dd('needs of facebook');
-            //return redirect('user/dashboard');
-      
+            $url = 'user/facebook/summary/'.$facebook['facebook_id'];
+            return redirect($url);
         } catch (\Throwable $th) {
                throw $th;
                return redirect('/user/dashboard');

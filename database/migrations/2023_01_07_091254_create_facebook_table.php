@@ -18,7 +18,8 @@ class CreateFacebookTable extends Migration
             $table->unsignedInteger('user_id');
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->string('facebook_id');
-            $table->string('access_token');
+            $table->string('access_token')->nullable();
+            $table->longText('login_response')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });

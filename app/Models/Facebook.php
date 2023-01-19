@@ -13,6 +13,6 @@ class Facebook extends Model
     protected $table = 'facebook';
  
     protected $fillable = [
-        'user_id', 'facebook_id', 'access_token',
+        'user_id', 'facebook_id', 'access_token','login_response'
     ];
 }
