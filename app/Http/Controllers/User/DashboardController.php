@@ -14,6 +14,7 @@ use App\Models\Google;
 use App\Models\Videos;
 use App\Models\Instagram;
 use Google\Service\YouTube as YouTubeClient;
+use Amirsarhang\Instagram as InstagramPkg;
 use Auth;
 use File;
 use Http;
@@ -186,8 +187,8 @@ class DashboardController extends Controller
     
     }
     public function InstagramSummary($instagram_id){
-
-        dd('insta_logined');
+       
+        dd('insta_id:'.$instagram_id);
         return view('user.instagram_summary',compact('instagram_posts'));
     }
     // Instagram End
