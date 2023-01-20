@@ -32,7 +32,7 @@
           </tr>
         </thead>
         <tbody>
-          @forelse($new_videos as $key=> $video)
+          @foreach($new_videos as $key=> $video)
           <tr>
               <td>{{ $loop->iteration }}</td>
               <td>{{$video->video_id}}</td>
@@ -40,13 +40,10 @@
               <td>{{$video->view_count}}</td>
               <td>{{$video->like_count}}</td>
           </tr>
-          @empty
-          <tr>No data found</tr>
-          @endforelse
+          @endforeach
         </tbody>
-
       </table>
-   
+      @if(count($new_videos) == 0) <p align="center;">No data found</p> @endif
    </div>
  </body>
  </html>

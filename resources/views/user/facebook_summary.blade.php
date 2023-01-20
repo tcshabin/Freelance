@@ -21,6 +21,7 @@
   <div class="container box">
    <h3 align="center"><b><span>Facebook Summary&nbsp;&nbsp;<a href="\logout" class="btn btn-link">Logout</a> </h3></b><br />
    <p><b>Latest Posts</b></p>
+   
    <table class="table datatable-basic" id="example">
         <thead>
           <tr class="thead-light">
@@ -31,19 +32,16 @@
           </tr>
         </thead>
         <tbody>
-          @forelse($facebook_posts as $key=> $data)
+          @foreach($facebook_posts as $key=> $data)
           <tr>
               <td>{{ $loop->iteration }}</td>
               <td>{{$data->link}}</td>
               <td>{{$data->shares ?? 0}}</td>
          </tr>
-          @empty
-          <tr>No data found</tr>
-          @endforelse
+          @endforeach
         </tbody>
-
-      </table>
-   
+    </table>
+    @if(count($facebook_posts) == 0) <p align="center;">No data found</p> @endif
    </div>
  </body>
  </html>
