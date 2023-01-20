@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use GuzzleHttp\Client;
 use App\Models\User;
 use App\Models\Facebook;
+use App\Models\FacebookPost;
 use App\Models\Youtube;
 use App\Models\Google;
 use App\Models\Videos;
@@ -52,20 +53,8 @@ class DashboardController extends Controller
     }
     public function FacebookSummary($facebook_id){
 
-        dd('facebook_id:'.$facebook_id);
-        // $api_key = config('services.google.api_key');
-        // // $channel_id = Youtube::whereUser_id(AUth::id())->latest()->value('channel_id');
-        // if(!is_null($channel_id)){
-        //     $latest_videos_ids = self::VideosId($api_key,$channel_id,7); //get latest 7 videos_id
-        //     $latest_videos_details = self::VideosDetails($channel_id,$api_key,$latest_videos_ids);
-        //     $new_videos = Videos::whereChannel_id($channel_id)->latest()->take(7)->get();
-        // }
-        // if(!isset($new_videos)){
-        //     $new_videos = array();
-        // }
-        // $channels = Youtube::whereChannel_id($channel_id)->first();
-        // return view('user.youtube_summary',compact('new_videos','channels'));
-       
+        $facebook_posts = FacebookPost::whereFacebook_id($facebook_id)->latest()->take(7)->get();
+        return view('user.facebook_summary',compact('facebook_posts'));
     }
     public function VideosId($api_key,$channel_id,$maxresult=1000){
 
@@ -138,6 +127,7 @@ class DashboardController extends Controller
      // Instagram Start
     public function redirectToInstagramProvider()
     {
+        //return Socialite::driver('instagram')->scopes(['user_profile','user_media'])->redirect();
         
         $appId = config('services.instagram.client_id');
         $redirectUri = urlencode(config('services.instagram.redirect'));
@@ -194,7 +184,7 @@ class DashboardController extends Controller
 
     public function redirectToGoogleProvider() // exactly google login
     {
-        return Socialite::driver('google')->scopes(['https://www.googleapis.com/auth/youtube.readonly'])->redirect();
+       return Socialite::driver('google')->scopes(['https://www.googleapis.com/auth/youtube.readonly'])->redirect();
     }
 
     public function ChannelCallback(Request $request)
@@ -294,18 +284,51 @@ class DashboardController extends Controller
             $facebook_user = Socialite::driver('facebook')->user();
             $data = array();
             $facebook = array();
+
             //$data['username'] = $facebook_user->getName();
             //$data['email'] = $facebook_user->getEmail();
             $facebook['user_id'] = Auth::id();
             $facebook['facebook_id'] = $facebook_user->getId();
             
             $facebook['login_response'] = json_encode($facebook_user);
+
+            $ch = curl_init();
+            $encode = json_encode($facebook_user,true);
+            $decode = json_decode($encode,true);
+          
+            $accessToken = $decode['token'];//'EAAKQwc9o9cMBABwPb62HTjwqb8ZArnnWSXSA6ctW1wOT3f9oPfqODPVrm6nMbEH0WChFQEZBq2qzEsToa8IJIss78PCx09WcdAiJg5kOTZC3FBqj99WseiU0FWZBqpAVGWp9ZB16HB2pViZBC53Ko68ZCoSai5kJoHyXkiqvNAKpKtoyBvQHVQPVAlY3gXCiUJNhPRpqMFBADzmOucSqsK0';
+            $facebook['access_token'] =$accessToken;
+            
+            curl_setopt($ch, CURLOPT_URL, 'https://graph.facebook.com/v15.0/me?fields=posts%7Blink%2Cshares%7D&access_token='.$accessToken);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+
+            $result = curl_exec($ch);
+            if (curl_errno($ch)) {
+                echo 'Error:' . curl_error($ch);
+            }
+            curl_close($ch);
+
             Facebook::updateOrCreate(['user_id'=>$facebook['user_id']],$facebook);
+
+            if(!empty($result)){
+                $response = json_decode($result,true);
+                $posts_data = isset($response['posts']['data']) ? $response['posts']['data'] : [];
+                if(!empty($posts_data)){ // take latest 7 posts
+                    $posts_data = array_slice($posts_data, 0, 7);
+                }
+                foreach($posts_data as $post){
+                    $link = isset($post['link']) ? $post['link'] : null;
+                    $shares = isset($post['shares']['count']) ? $post['shares']['count'] : null;
+                    if(!is_null($link)){
+                        FacebookPost::updateOrCreate(['facebook_id'=>$facebook['facebook_id'],'link'=>$link],['link'=>$link,'shares'=>$shares,'response'=>$result]);
+                    }
+                }
+            }
             $url = 'user/facebook/summary/'.$facebook['facebook_id'];
             return redirect($url);
         } catch (\Throwable $th) {
                throw $th;
-               return redirect('/user/dashboard');
+               return redirect()->back('/user/dashboard')->withErrors('Something Went Wrong');
         }
     }
 

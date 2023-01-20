@@ -24,6 +24,7 @@
    <table class="table datatable-basic" id="example">
         <thead>
           <tr class="thead-light">
+            <th>No</th>
             <th>Video id</th>
             <th>Channel Id</th>
             <th>Views</th>
@@ -33,6 +34,7 @@
         <tbody>
           @forelse($new_videos as $key=> $video)
           <tr>
+              <td>{{ $loop->iteration }}</td>
               <td>{{$video->video_id}}</td>
               <td>{{$video->channel_id}}</td>
               <td>{{$video->view_count}}</td>
