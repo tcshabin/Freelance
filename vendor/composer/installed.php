@@ -5,11 +5,20 @@
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
-        'reference' => '9c53c0fe352aae048c97b5d3c422019a6c2646fe',
+        'reference' => 'de50397035fe01b3bb81c4c081df3be0002ddeab',
         'name' => 'laravel/laravel',
         'dev' => true,
     ),
     'versions' => array(
+        'amirsarhang/instagram-php-sdk' => array(
+            'pretty_version' => '1.2.3',
+            'version' => '1.2.3.0',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../amirsarhang/instagram-php-sdk',
+            'aliases' => array(),
+            'reference' => 'a0a2801db5f379e58c4bb8b0f148d3d793e030a3',
+            'dev_requirement' => false,
+        ),
         'asm89/stack-cors' => array(
             'pretty_version' => 'v2.1.1',
             'version' => '2.1.1.0',
@@ -147,6 +156,15 @@
             'aliases' => array(),
             'reference' => '3c921a1cdba35b68a7f0ccffc6dffc1995b18267',
             'dev_requirement' => true,
+        ),
+        'facebook/graph-sdk' => array(
+            'pretty_version' => '5.7.0',
+            'version' => '5.7.0.0',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../facebook/graph-sdk',
+            'aliases' => array(),
+            'reference' => '2d8250638b33d73e7a87add65f47fabf91f8ad9b',
+            'dev_requirement' => false,
         ),
         'fakerphp/faker' => array(
             'pretty_version' => 'v1.21.0',
@@ -463,7 +481,7 @@
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
-            'reference' => '9c53c0fe352aae048c97b5d3c422019a6c2646fe',
+            'reference' => 'de50397035fe01b3bb81c4c081df3be0002ddeab',
             'dev_requirement' => false,
         ),
         'laravel/passport' => array(
