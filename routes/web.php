@@ -40,6 +40,7 @@ Route::group(['prefix' => 'user', 'middleware' => 'auth'], function () {
     // insta start
     Route::get('instagram','App\Http\Controllers\User\DashboardController@redirectToInstagramProvider')->name('instagram.user');
     Route::get('instagram/callback', 'App\Http\Controllers\User\DashboardController@instagramProviderCallback')->name('instagram.user.callback');
+    Route::get('instagram/summary/{instagram_id}', 'App\Http\Controllers\User\DashboardController@InstagramSummary')->name('instagram.user.summary');
     // insta end
     
     // google start

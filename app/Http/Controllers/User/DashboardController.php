@@ -12,6 +12,7 @@ use App\Models\FacebookPost;
 use App\Models\Youtube;
 use App\Models\Google;
 use App\Models\Videos;
+use App\Models\Instagram;
 use Google\Service\YouTube as YouTubeClient;
 use Auth;
 use File;
@@ -157,7 +158,7 @@ class DashboardController extends Controller
         ]);
     
         if ($response->getStatusCode() != 200) {
-            return redirect()->route('home')->with('error', 'Unauthorized login to Instagram.');
+            return redirect('user/dashboard')->with('error', 'Unauthorized login to Instagram.');
         }
     
         $content = $response->getBody()->getContents();
@@ -171,12 +172,23 @@ class DashboardController extends Controller
     
         $content = $response->getBody()->getContents();
         $oAuth = json_decode($content);
+
+        if(isset($oAuth->username)){
+            $data = array();
+            $data['access_token'] = $accessToken;
+            $data['insta_id'] = $oAuth->id;
+            $data['user_id'] = Auth::id();
+            Instagram::updateOrCreate(['user_id'=>Auth::id(),'insta_id'=>$oAuth->id],$data);
+            $url = 'user/instagram/summary/'.$data['insta_id'];
+            return redirect($url);
+        }
+        return redirect('user/dashboard')->with('error', 'Something Went Wrong');
     
-        // Get instagram user name 
-        $username = $oAuth->username;
-    
-        dd($oAuth);
-        // do your code here
+    }
+    public function InstagramSummary($instagram_id){
+
+        dd('insta_logined');
+        return view('user.instagram_summary',compact('instagram_posts'));
     }
     // Instagram End
 
@@ -299,7 +311,7 @@ class DashboardController extends Controller
             $accessToken = $decode['token'];//'EAAKQwc9o9cMBABwPb62HTjwqb8ZArnnWSXSA6ctW1wOT3f9oPfqODPVrm6nMbEH0WChFQEZBq2qzEsToa8IJIss78PCx09WcdAiJg5kOTZC3FBqj99WseiU0FWZBqpAVGWp9ZB16HB2pViZBC53Ko68ZCoSai5kJoHyXkiqvNAKpKtoyBvQHVQPVAlY3gXCiUJNhPRpqMFBADzmOucSqsK0';
             $facebook['access_token'] =$accessToken;
             
-            curl_setopt($ch, CURLOPT_URL, 'https://graph.facebook.com/v15.0/me?fields=posts%7Blink%2Cshares%7D&access_token='.$accessToken);
+            curl_setopt($ch, CURLOPT_URL, 'https://graph.facebook.com/v15.0/me?fields=posts.limit(7)%7Blink%2Cshares%7D&access_token='.$accessToken);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
 
             $result = curl_exec($ch);
@@ -313,9 +325,7 @@ class DashboardController extends Controller
             if(!empty($result)){
                 $response = json_decode($result,true);
                 $posts_data = isset($response['posts']['data']) ? $response['posts']['data'] : [];
-                if(!empty($posts_data)){ // take latest 7 posts
-                    $posts_data = array_slice($posts_data, 0, 7);
-                }
+                
                 foreach($posts_data as $post){
                     $link = isset($post['link']) ? $post['link'] : null;
                     $shares = isset($post['shares']['count']) ? $post['shares']['count'] : null;
