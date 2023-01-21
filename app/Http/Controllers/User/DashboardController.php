@@ -187,9 +187,20 @@ class DashboardController extends Controller
     
     }
     public function InstagramSummary($instagram_id){
-       
-        dd('insta_id:'.$instagram_id);
-        return view('user.instagram_summary',compact('instagram_posts'));
+
+        // $ch = curl_init();
+
+        // curl_setopt($ch, CURLOPT_URL, 'https://graph.facebook.com/v15.0/2130038143865586?fields=biography%2Cid%2Cusername%2Cwebsite&access_token=EAAKQwc9o9cMBAPZB1RGH8dPVwcTikhpZAuHnBHl9zrxKz271Aa4st69iEihRVsrpZCzGn9B3ucPe8Du93KHIYRz3KWWZCr1fzvSGu2H2Hp8lYN4woOIO6xTnZB6hRoCR9n9a98noobQWvoZB8jpIKLh1t3kl0ZBj1GumZBhCVMoBul9RdQhLefxhBoNZBIRxK7M230eZB8OIM0QAWXymcZBXSfvMzttb0ZCdNOewzNVZCF8ZBZBkZBmLv3ZAa8BY4');
+        // curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+
+        // $result = curl_exec($ch);
+        // if (curl_errno($ch)) {
+        //     echo 'Error:' . curl_error($ch);
+        // }
+        // curl_close($ch);
+        // dd($result);
+        
+        return view('user.instagram_summary',compact('instagram_id'));
     }
     // Instagram End
 
