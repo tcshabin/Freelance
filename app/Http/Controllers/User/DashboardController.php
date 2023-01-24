@@ -13,6 +13,7 @@ use App\Models\Youtube;
 use App\Models\Google;
 use App\Models\Videos;
 use App\Models\Instagram;
+use App\Models\InstagramPost;
 use Google\Service\YouTube as YouTubeClient;
 use Amirsarhang\Instagram as InstagramPkg;
 use Auth;
@@ -180,27 +181,57 @@ class DashboardController extends Controller
             $data['insta_id'] = $oAuth->id;
             $data['user_id'] = Auth::id();
             Instagram::updateOrCreate(['user_id'=>Auth::id(),'insta_id'=>$oAuth->id],$data);
-            $url = 'user/instagram/summary/'.$data['insta_id'];
+
+            self::InstagramPostUploads($oAuth->id,$accessToken);
+
+            $url = 'user/instagram/summary/'.$oAuth->id;
             return redirect($url);
         }
         return redirect('user/dashboard')->with('error', 'Something Went Wrong');
     
     }
+    public function InstagramPostUploads($instagram_id,$token){
+
+        $curl = curl_init();
+
+        curl_setopt_array($curl, array(
+        CURLOPT_URL => 'https://graph.instagram.com/'.$instagram_id.'/media?fields=id,caption,media_type,media_url,thumbnail_url,permalink,timestamp&access_token='.$token,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_ENCODING => '',
+        CURLOPT_MAXREDIRS => 10,
+        CURLOPT_TIMEOUT => 0,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+        CURLOPT_CUSTOMREQUEST => 'GET',
+        ));
+
+        $result2 = curl_exec($curl);
+
+        curl_close($curl);
+       
+        if(!empty($result2)){
+            $posts_data = json_decode($result2,true);
+
+            if(!empty($posts_data)){
+                foreach($posts_data as $data){
+                    foreach($data as $post){
+                        $media_id = isset($post['id']) ? $post['id'] : null;
+                        $media_type = isset($post['media_type']) ? $post['media_type'] : null;
+                        $link = isset($post['media_url']) ? $post['media_url'] : null; //permalink
+                        $uploaded_at = isset($post['timestamp']) ? $post['timestamp'] : null;
+                        if(!is_null($link)){
+                            InstagramPost::updateOrCreate(['instagram_id'=>$instagram_id,'media_id'=>$media_id],['link'=>$link,'media_id'=>$media_id,'media_type'=>$media_type,'response'=>$result2,'uploaded_at'=>$uploaded_at]);
+                        }
+                    }
+                }
+            }
+        }
+        return true;
+    }
     public function InstagramSummary($instagram_id){
-
-        // $ch = curl_init();
-
-        // curl_setopt($ch, CURLOPT_URL, 'https://graph.facebook.com/v15.0/2130038143865586?fields=biography%2Cid%2Cusername%2Cwebsite&access_token=EAAKQwc9o9cMBAPZB1RGH8dPVwcTikhpZAuHnBHl9zrxKz271Aa4st69iEihRVsrpZCzGn9B3ucPe8Du93KHIYRz3KWWZCr1fzvSGu2H2Hp8lYN4woOIO6xTnZB6hRoCR9n9a98noobQWvoZB8jpIKLh1t3kl0ZBj1GumZBhCVMoBul9RdQhLefxhBoNZBIRxK7M230eZB8OIM0QAWXymcZBXSfvMzttb0ZCdNOewzNVZCF8ZBZBkZBmLv3ZAa8BY4');
-        // curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-
-        // $result = curl_exec($ch);
-        // if (curl_errno($ch)) {
-        //     echo 'Error:' . curl_error($ch);
-        // }
-        // curl_close($ch);
-        // dd($result);
         
-        return view('user.instagram_summary',compact('instagram_id'));
+        $instagram_posts = InstagramPost::whereInstagram_id($instagram_id)->latest()->take(7)->get();
+        return view('user.instagram_summary',compact('instagram_id','instagram_posts'));
     }
     // Instagram End
 

@@ -26,16 +26,26 @@
         <thead>
           <tr class="thead-light">
             <th>No</th>
-            <th>Post</th>
-            <th>Followers</th>
-            <th>Following</th>
+            <th>Media Id</th>
+            <th>Media Type</th>
+            <th>Uploaded At</th>
+            <th>URL</th>
           </tr>
         </thead>
         <tbody>
-         
+          @foreach($instagram_posts as $key=> $data)
+            <tr>
+                <td>{{ $loop->iteration }}</td>
+                <td>{{$data->media_id}}</td>
+                <td>{{$data->media_type}}</td>
+                <td>{{ date('d-m-Y H:i:s', strtotime($data->uploaded_at)) }}</td>
+                <td><a href="{{$data->link}}" target="_blank">View Post</a></td>
+            </tr>
+          @endforeach
         </tbody>
     </table>
-   <p align="center;">Instagram Business Verification Not Done !</p>
+    @if(count($instagram_posts) == 0) <p align="center;">No data found</p> @endif
+   <!-- <p align="center;">Instagram Business Verification Not Done !</p> -->
    </div>
  </body>
  </html>
