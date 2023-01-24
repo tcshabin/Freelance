@@ -28,7 +28,7 @@
             <th>No</th>
             <th>Post</th>
             <th>Shares</th>
-           
+            <th>Likes</th>
           </tr>
         </thead>
         <tbody>
@@ -37,6 +37,7 @@
               <td>{{ $loop->iteration }}</td>
               <td>{{$data->link}}</td>
               <td>{{$data->shares ?? 0}}</td>
+              <td>{{$data->likes}}</td>
          </tr>
           @endforeach
         </tbody>

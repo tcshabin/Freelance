@@ -57,6 +57,36 @@ class DashboardController extends Controller
     public function FacebookSummary($facebook_id){
 
         $facebook_posts = FacebookPost::whereFacebook_id($facebook_id)->latest()->take(7)->get();
+
+        $token = Facebook::whereFacebook_id($facebook_id)->latest()->value('access_token');
+
+        // loops to get total likes
+        foreach($facebook_posts as $posts){
+
+            $curl = curl_init();
+
+            curl_setopt_array($curl, array(
+                CURLOPT_URL => 'https://graph.facebook.com/v15.0/'.$posts->object_id.'/likes?access_token='.$token.'&summary=true&limit=25&after=QVFIUmp6MXVRaEhOWWxGV2cwT3h3VE9KclpHejFvMF9zaU9hUFNYVGs5LWQxZAW5rNDRmZAHdpRmM2ZADdwbWtnbkY5SVpKME9ZAc1ZA5a3VGZAXF3bmh2bWhMUWV3',
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_ENCODING => '',
+                CURLOPT_MAXREDIRS => 10,
+                CURLOPT_TIMEOUT => 0,
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+                CURLOPT_CUSTOMREQUEST => 'GET',
+            ));
+    
+            $response = curl_exec($curl);
+    
+            curl_close($curl);
+            if(!empty($response)){
+                $result = json_decode($response,true);
+                $likes = isset($result['summary']['total_count']) ? $result['summary']['total_count'] : null;
+                if(!is_null($likes)){
+                    FacebookPost::updateOrCreate(['facebook_id'=>$facebook_id,'object_id'=>$posts->object_id],['likes'=>$likes]);
+                }
+            }
+        }
         return view('user.facebook_summary',compact('facebook_posts'));
     }
     public function VideosId($api_key,$channel_id,$maxresult=1000){
@@ -353,8 +383,8 @@ class DashboardController extends Controller
           
             $accessToken = $decode['token'];//'EAAKQwc9o9cMBABwPb62HTjwqb8ZArnnWSXSA6ctW1wOT3f9oPfqODPVrm6nMbEH0WChFQEZBq2qzEsToa8IJIss78PCx09WcdAiJg5kOTZC3FBqj99WseiU0FWZBqpAVGWp9ZB16HB2pViZBC53Ko68ZCoSai5kJoHyXkiqvNAKpKtoyBvQHVQPVAlY3gXCiUJNhPRpqMFBADzmOucSqsK0';
             $facebook['access_token'] =$accessToken;
-            
-            curl_setopt($ch, CURLOPT_URL, 'https://graph.facebook.com/v15.0/me?fields=posts.limit(7)%7Blink%2Cshares%7D&access_token='.$accessToken);
+            $fields = urlencode('posts');
+            curl_setopt($ch, CURLOPT_URL, 'https://graph.facebook.com/v15.0/me?fields=posts.limit(7)%7Blink%2Ctype%2Cobject_id%2Cshares%7D&access_token='.$accessToken);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
 
             $result = curl_exec($ch);
@@ -372,8 +402,9 @@ class DashboardController extends Controller
                 foreach($posts_data as $post){
                     $link = isset($post['link']) ? $post['link'] : null;
                     $shares = isset($post['shares']['count']) ? $post['shares']['count'] : null;
+                    $object_id = isset($post['object_id']) ? $post['object_id'] : null;
                     if(!is_null($link)){
-                        FacebookPost::updateOrCreate(['facebook_id'=>$facebook['facebook_id'],'link'=>$link],['link'=>$link,'shares'=>$shares,'response'=>$result]);
+                        FacebookPost::updateOrCreate(['facebook_id'=>$facebook['facebook_id'],'link'=>$link],['link'=>$link,'shares'=>$shares,'response'=>$result,'object_id'=>$object_id]);
                     }
                 }
             }

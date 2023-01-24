@@ -19,6 +19,7 @@ class CreateFacebookPostsTable extends Migration
             $table->string('link')->nullable();
             $table->integer('shares')->nullable();
             $table->integer('likes')->nullable();
+            $table->string('object_id')->nullable();
             $table->longText('response')->nullable();
             $table->timestamps();
             $table->softDeletes();

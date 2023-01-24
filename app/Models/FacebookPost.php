@@ -13,6 +13,6 @@ class FacebookPost extends Model
     protected $table = 'facebook_posts';
  
     protected $fillable = [
-        'link', 'facebook_id', 'shares','response','likes'
+        'link', 'facebook_id', 'shares','response','likes','object_id'
     ];
 }
