@@ -13,6 +13,6 @@ class Youtube extends Model
     protected $table = 'youtube';
  
     protected $fillable = [
-        'user_id', 'youtube_id', 'access_token','channel_response','channel_id','subscribers_count','video_count'
+        'user_id', 'youtube_id', 'access_token','channel_response','channel_id','subscribers_count','video_count','description','average_engagement'
     ];
 }

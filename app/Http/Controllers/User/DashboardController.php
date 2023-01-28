@@ -14,6 +14,7 @@ use App\Models\Google;
 use App\Models\Videos;
 use App\Models\Instagram;
 use App\Models\InstagramPost;
+use App\Models\YoutubeReports;
 use Google\Service\YouTube as YouTubeClient;
 use Amirsarhang\Instagram as InstagramPkg;
 use Auth;
@@ -54,110 +55,86 @@ class DashboardController extends Controller
         return view('user.youtube_summary',compact('new_videos','channels'));
        
     }
-    public function FacebookSummary($facebook_id){
+    public function YoutubeAnalyse($token,$channel_id){
 
-        $facebook_posts = FacebookPost::whereFacebook_id($facebook_id)->latest()->take(7)->get();
-
-        $token = Facebook::whereFacebook_id($facebook_id)->latest()->value('access_token');
-
-        // loops to get total likes
-        foreach($facebook_posts as $posts){
-
-            $curl = curl_init();
-
-            curl_setopt_array($curl, array(
-                CURLOPT_URL => 'https://graph.facebook.com/v15.0/'.$posts->object_id.'/likes?access_token='.$token.'&summary=true&limit=25&after=QVFIUmp6MXVRaEhOWWxGV2cwT3h3VE9KclpHejFvMF9zaU9hUFNYVGs5LWQxZAW5rNDRmZAHdpRmM2ZADdwbWtnbkY5SVpKME9ZAc1ZA5a3VGZAXF3bmh2bWhMUWV3',
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_ENCODING => '',
-                CURLOPT_MAXREDIRS => 10,
-                CURLOPT_TIMEOUT => 0,
-                CURLOPT_FOLLOWLOCATION => true,
-                CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-                CURLOPT_CUSTOMREQUEST => 'GET',
-            ));
-    
-            $response = curl_exec($curl);
-    
-            curl_close($curl);
-            if(!empty($response)){
-                $result = json_decode($response,true);
-                $likes = isset($result['summary']['total_count']) ? $result['summary']['total_count'] : null;
-                if(!is_null($likes)){
-                    FacebookPost::updateOrCreate(['facebook_id'=>$facebook_id,'object_id'=>$posts->object_id],['likes'=>$likes]);
-                }
-            }
+        if($channel_id == null){
+            return false;
         }
-        return view('user.facebook_summary',compact('facebook_posts'));
-    }
-    public function VideosId($api_key,$channel_id,$maxresult=1000){
-
-        $videoids = array();
+        $api_key = config('services.google.api_key');
         $curl = curl_init();
+
+        $start_date = date("Y-m-d",strtotime('-30 days'));
+        $end_date = date("Y-m-d");
+
         curl_setopt_array($curl, array(
-        CURLOPT_URL => 'https://www.googleapis.com/youtube/v3/search?key='.$api_key.'&channelId='.$channel_id.'&maxResults='.$maxresult.'&part=snippet,id&order=date&maxResults=7',
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_ENCODING => '',
-        CURLOPT_MAXREDIRS => 10,
-        CURLOPT_TIMEOUT => 0,
-        CURLOPT_FOLLOWLOCATION => true,
-        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-        CURLOPT_CUSTOMREQUEST => 'GET',
+            CURLOPT_URL => 'https://content-youtubeanalytics.googleapis.com/v2/reports?dimensions=day&startDate='.$start_date.'&ids=channel==MINE&metrics=views,subscribersGained,likes&endDate='.$end_date.'&key='.$api_key,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => '',
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 0,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => 'GET',
+            CURLOPT_HTTPHEADER => array(
+                'x-origin: https://explorer.apis.google.com',
+                'Authorization: Bearer '.$token
+            ),
         ));
 
         $response = curl_exec($curl);
-
         curl_close($curl);
+        $analyst = json_decode($response,true);
         
-        $responce_card = json_decode($response,true);
-        if(isset($responce_card['items'])){
-            foreach($responce_card['items'] as $video){
-                if(isset($video['id']['videoId'])){
-                    $videoids[] = $video['id']['videoId'];
-                }
+        if(isset($analyst['rows'])){
+            foreach($analyst['rows'] as $report){
+                $date = isset($report[0]) ? $report[0] : null;
+                $views =  isset($report[1]) ? $report[1] : null;
+                $sub_get = isset($report[2]) ? $report[2] : null;
+                $likes = isset($report[3]) ? $report[3] : null;
+                YoutubeReports::updateOrCreate(['channel_id'=>$channel_id,'date'=>$date],['views'=>$views,'likes'=>$likes,'sub_get'=>$sub_get,'date'=>$date,'channel_id'=>$channel_id,'response' =>$response ]);
             }
         }
-        $list = implode(',', $videoids);
-        return $list;
-    }
-    public function VideosDetails($channel_id,$api_key,$videos_ids){
 
-        $statistics = array();
+        // average_engagement_rate start
+
         $curl = curl_init();
 
+        $start_date = '2000-01-01';//date("Y-m-d",strtotime('-30 years'));
+        
         curl_setopt_array($curl, array(
-        CURLOPT_URL => 'https://youtube.googleapis.com/youtube/v3/videos?part=statistics&key='.$api_key.'&id='.$videos_ids,
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_ENCODING => '',
-        CURLOPT_MAXREDIRS => 10,
-        CURLOPT_TIMEOUT => 0,
-        CURLOPT_FOLLOWLOCATION => true,
-        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-        CURLOPT_CUSTOMREQUEST => 'GET',
+            CURLOPT_URL => 'https://content-youtubeanalytics.googleapis.com/v2/reports?startDate='.$start_date.'&ids=channel==MINE&metrics=likes,dislikes,comments&endDate='.$end_date.'&key='.$api_key,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => '',
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 0,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => 'GET',
+            CURLOPT_HTTPHEADER => array(
+                'x-origin: https://explorer.apis.google.com',
+                'Authorization: Bearer '.$token
+            ),
         ));
 
-        $response = curl_exec($curl);
-
+        $response2 = curl_exec($curl);
         curl_close($curl);
-        
-        $responce_card = json_decode($response,true);
-        if(isset($responce_card['items'])){
-            foreach($responce_card['items'] as $videodetails){
-                if(isset($videodetails['id']) && isset($videodetails['statistics'])){//['statistics']
-                    $statistics[$videodetails['id']] = $videodetails['statistics'];
-                    
-                }
-            }
-        }
+        $analyst2 = json_decode($response2,true);
+
        
-        if(!empty($statistics)){
-            foreach ($statistics as $key => $value) {
-                Videos::updateOrCreate(['video_id'=>$key],['type'=>'youtube','view_count'=>$value['viewCount'],'like_count'=>$value['likeCount'],'video_id'=>$key,'channel_id'=>$channel_id]);
-            }
+        $total_likes = isset($analyst2['rows'][0][0]) ? $analyst2['rows'][0][0] : 0;
+        $total_dislikes = isset($analyst2['rows'][0][1]) ? $analyst2['rows'][0][1] : 0;
+        $total_comments = isset($analyst2['rows'][0][2]) ? $analyst2['rows'][0][2] : 0;
+        $total_subscribers = Youtube::whereChannel_id($channel_id)->value('subscribers_count');
+        $total_videos =  Youtube::whereChannel_id($channel_id)->value('video_count');
+        if(!is_null($total_videos) && !is_null($total_subscribers) && $total_subscribers !=0){
+            $total = ($total_likes+$total_dislikes+$total_comments)/$total_videos;
+            $average = ($total/$total_subscribers)*100;
+            Youtube::updateOrCreate(['channel_id'=>$channel_id],['average_engagement'=>$average]);
         }
-       return $statistics;
+        //average_engagement_end
+        return true;
     }
-
-     // Instagram Start
+    // Instagram Start
     public function redirectToInstagramProvider()
     {
         //return Socialite::driver('instagram')->scopes(['user_profile','user_media'])->redirect();
@@ -272,27 +249,27 @@ class DashboardController extends Controller
        return Socialite::driver('google')->scopes(['https://www.googleapis.com/auth/youtube.readonly'])->redirect();
     }
 
-    public function ChannelCallback(Request $request)
-    {
-        $data = array();
-        $data['user_id'] = Auth::id();
-        $data['channel_id'] = null;
-        $data['channel_response'] = json_encode($request->all());
-        if(!empty($data['channel_response'])){
-            $result = json_decode($data['channel_response'],true);
-            if(isset($result['body'])){
-                $body =  json_decode($result['body'],true);
-                $data['channel_id'] = isset($body['items'][0]['id']) ? $body['items'][0]['id'] : null;
-                $data['subscribers_count'] = isset($body['items'][0]['statistics']['subscriberCount']) ? $body['items'][0]['statistics']['subscriberCount'] : null;
-                $data['video_count'] = isset($body['items'][0]['statistics']['videoCount']) ? $body['items'][0]['statistics']['videoCount'] : null;
-            }
+    // public function ChannelCallback(Request $request)
+    // {
+    //     $data = array();
+    //     $data['user_id'] = Auth::id();
+    //     $data['channel_id'] = null;
+    //     $data['channel_response'] = json_encode($request->all());
+    //     if(!empty($data['channel_response'])){
+    //         $result = json_decode($data['channel_response'],true);
+    //         if(isset($result['body'])){
+    //             $body =  json_decode($result['body'],true);
+    //             $data['channel_id'] = isset($body['items'][0]['id']) ? $body['items'][0]['id'] : null;
+    //             $data['subscribers_count'] = isset($body['items'][0]['statistics']['subscriberCount']) ? $body['items'][0]['statistics']['subscriberCount'] : null;
+    //             $data['video_count'] = isset($body['items'][0]['statistics']['videoCount']) ? $body['items'][0]['statistics']['videoCount'] : null;
+    //         }
             
-            Youtube::updateOrCreate(['user_id'=>Auth::id(),'channel_id'=>$data['channel_id']],$data);
+    //         Youtube::updateOrCreate(['user_id'=>Auth::id(),'channel_id'=>$data['channel_id']],$data);
             
-            return response()->json(['status'=>true,'channel_id'=>$data['channel_id'],'message' => 'Response Created Sucessfully..!']);
-        }
-        return response()->json(['status'=>false,'message' => 'No Response']);
-    } 
+    //         return response()->json(['status'=>true,'channel_id'=>$data['channel_id'],'message' => 'Response Created Sucessfully..!']);
+    //     }
+    //     return response()->json(['status'=>false,'message' => 'No Response']);
+    // } 
 
 
     public function GoogleProviderCallback(Request $request) //youtube response geting function
@@ -330,7 +307,7 @@ class DashboardController extends Controller
         ));
         
         $response = curl_exec($curl);
-        
+       
         curl_close($curl);
        
         $data = array();
@@ -344,9 +321,12 @@ class DashboardController extends Controller
                 $data['channel_id'] = isset($result['items'][0]['id']) ? $result['items'][0]['id'] : null;
                 $data['subscribers_count'] = isset($result['items'][0]['statistics']['subscriberCount']) ? $result['items'][0]['statistics']['subscriberCount'] : null;
                 $data['video_count'] = isset($result['items'][0]['statistics']['videoCount']) ? $result['items'][0]['statistics']['videoCount'] : null;
+                $data['description'] =  isset($result['items'][0]['snippet']['description']) ? $result['items'][0]['snippet']['description'] : null;
             }
             
             Youtube::updateOrCreate(['user_id'=>Auth::id(),'channel_id'=>$data['channel_id']],$data);
+
+            self::YoutubeAnalyse($google_user->token,$data['channel_id']);
 
             $url = 'user/youtube/summary/'.$data['channel_id'];
             return redirect($url);
@@ -354,6 +334,74 @@ class DashboardController extends Controller
         return redirect()->back('/user/dashboard')->withErrors('No Channel Found/Something Went Wrong');
         
     } 
+    public function VideosId($api_key,$channel_id,$maxresult=1000){
+
+        $videoids = array();
+        $curl = curl_init();
+        curl_setopt_array($curl, array(
+        CURLOPT_URL => 'https://www.googleapis.com/youtube/v3/search?key='.$api_key.'&channelId='.$channel_id.'&maxResults='.$maxresult.'&part=snippet,id&order=date&maxResults=7',
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_ENCODING => '',
+        CURLOPT_MAXREDIRS => 10,
+        CURLOPT_TIMEOUT => 0,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+        CURLOPT_CUSTOMREQUEST => 'GET',
+        ));
+
+        $response = curl_exec($curl);
+
+        curl_close($curl);
+        
+        $responce_card = json_decode($response,true);
+        
+        if(isset($responce_card['items'])){
+            foreach($responce_card['items'] as $video){
+                if(isset($video['id']['videoId'])){
+                    $videoids[] = $video['id']['videoId'];
+                }
+            }
+        }
+        $list = implode(',', $videoids);
+        return $list;
+    }
+    public function VideosDetails($channel_id,$api_key,$videos_ids){
+
+        $statistics = array();
+        $curl = curl_init();
+
+        curl_setopt_array($curl, array(
+        CURLOPT_URL => 'https://youtube.googleapis.com/youtube/v3/videos?part=statistics&key='.$api_key.'&id='.$videos_ids,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_ENCODING => '',
+        CURLOPT_MAXREDIRS => 10,
+        CURLOPT_TIMEOUT => 0,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+        CURLOPT_CUSTOMREQUEST => 'GET',
+        ));
+
+        $response = curl_exec($curl);
+
+        curl_close($curl);
+        
+        $responce_card = json_decode($response,true);
+        if(isset($responce_card['items'])){
+            foreach($responce_card['items'] as $videodetails){
+                if(isset($videodetails['id']) && isset($videodetails['statistics'])){//['statistics']
+                    $statistics[$videodetails['id']] = $videodetails['statistics'];
+                    
+                }
+            }
+        }
+       
+        if(!empty($statistics)){
+            foreach ($statistics as $key => $value) {
+                Videos::updateOrCreate(['video_id'=>$key],['type'=>'youtube','view_count'=>$value['viewCount'],'like_count'=>$value['likeCount'],'video_id'=>$key,'channel_id'=>$channel_id]);
+            }
+        }
+       return $statistics;
+    }
     // Google End
 
     // Facebook Start
@@ -414,6 +462,70 @@ class DashboardController extends Controller
                throw $th;
                return redirect()->back('/user/dashboard')->withErrors('Something Went Wrong');
         }
+    }
+
+    public function FacebookSummary($facebook_id){
+        
+        // $ch = curl_init();
+
+        // curl_setopt($ch, CURLOPT_URL, 'https://graph.facebook.com/164483436331506/accounts?access_token=EAAKQwc9o9cMBAHLUosgbu4ZBKJkRAOAlx3PdZB9GPSeASkZBQvW5TNAybVBjFxGbR24hFHc48jqsCOsei51wTqNggikFOAWOTSVcZBsac37WZAkpGU4qjo9odQT6ZCxYkNAdqqDh7FpptCdYjjyGyZACcN6oJQsM1OgLBhlUR8XyvwaUZCixJkQFpZC4LnUzMI7aAQlpEMmyS4lIjmrYHGklqKieFnFZCpFpEZC7LYtx7ZBVAEtbwNDe4pANuavwRqZBreHgZD');
+        // curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+
+        // $result = curl_exec($ch);
+        // if (curl_errno($ch)) {
+        //     echo 'Error:' . curl_error($ch);
+        // }
+        // $curl = curl_init();
+
+        // curl_setopt_array($curl, array(
+        //     CURLOPT_URL => 'https://graph.facebook.com/164483436331506/accounts?access_token=EAAKQwc9o9cMBAC2AwxPU4ZAoMCZC50BuMs88lZB8vbZBZA1yXJZCIM6htdBU7YHDdPs3XZAPCFeZByEcSNJdZCmjQTaBmy7tyIrmnZBaFg76sny9uYtg77ZAprmcZBmVzZC5ew6Fcwd3Cb7BYEDrG09rlUZAtWCLzZCgqFCHC6FPSeBEg7NUFbeTa4lz1O7YOauNCLzxyD0TiTDirr1Eljc4kzq4dBQr09NZAWsZCJkKF6TPavJpR4r6AGQJeBTbnZBXP21ZCGM2SsZD',
+        //     CURLOPT_RETURNTRANSFER => true,
+        //     CURLOPT_ENCODING => '',
+        //     CURLOPT_MAXREDIRS => 10,
+        //     CURLOPT_TIMEOUT => 0,
+        //     CURLOPT_FOLLOWLOCATION => true,
+        //     CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+        //     CURLOPT_CUSTOMREQUEST => 'GET',
+        // ));
+
+        // $response = curl_exec($curl);
+        // dd($response);
+        // curl_close($ch);
+
+        $facebook_posts = FacebookPost::whereFacebook_id($facebook_id)->latest()->take(7)->get();
+
+        $token = Facebook::whereFacebook_id($facebook_id)->latest()->value('access_token');
+
+        // loops to get total likes
+        foreach($facebook_posts as $posts){
+
+            $curl = curl_init();
+
+            curl_setopt_array($curl, array(
+                CURLOPT_URL => 'https://graph.facebook.com/v15.0/'.$posts->object_id.'/likes?access_token='.$token.'&summary=true&limit=25&after=QVFIUmp6MXVRaEhOWWxGV2cwT3h3VE9KclpHejFvMF9zaU9hUFNYVGs5LWQxZAW5rNDRmZAHdpRmM2ZADdwbWtnbkY5SVpKME9ZAc1ZA5a3VGZAXF3bmh2bWhMUWV3',
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_ENCODING => '',
+                CURLOPT_MAXREDIRS => 10,
+                CURLOPT_TIMEOUT => 0,
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+                CURLOPT_CUSTOMREQUEST => 'GET',
+            ));
+    
+            $response = curl_exec($curl);
+    
+            curl_close($curl);
+            if(!empty($response)){
+                $result = json_decode($response,true);
+                $likes = isset($result['summary']['total_count']) ? $result['summary']['total_count'] : null;
+                if(!is_null($likes)){
+                    FacebookPost::updateOrCreate(['facebook_id'=>$facebook_id,'object_id'=>$posts->object_id],['likes'=>$likes]);
+                }
+            }
+        }
+        $facebook_posts = FacebookPost::whereFacebook_id($facebook_id)->latest()->take(7)->get();
+        
+        return view('user.facebook_summary',compact('facebook_posts'));
     }
 
     // Facebook End

@@ -20,7 +20,11 @@
   <br />
   <div class="container box">
    <h3 align="center"><b><span>Youtube Summary&nbsp;&nbsp;<a href="\logout" class="btn btn-link">Logout</a> </h3></b><br />
-   <p><b>Latest Videos</b> &nbsp;Total Subscribers : {{$channels->subscribers_count ?? 0}} &nbsp;<span>Total Videos : {{$channels->video_count ?? 0}}</span></p>
+   <center><p>&nbsp;<b>Total Subscribers</b> : {{$channels->subscribers_count ?? 0}} &nbsp;<span><b>Total Videos</b> : {{$channels->video_count ?? 0}}</span>
+   &nbsp;<span><b>Average Engagement</b> : {{$channels->average_engagement ?? 0}}</span>
+  </p></center>
+  <center><p>&nbsp;<span><b>Description</b> : {{$channels->description ?? ''}}</span></p></center>
+  <p><b>Latest Videos</b></p>
    <table class="table datatable-basic" id="example">
         <thead>
           <tr class="thead-light">

@@ -37,7 +37,7 @@
               <td>{{ $loop->iteration }}</td>
               <td>{{$data->link}}</td>
               <td>{{$data->shares ?? 0}}</td>
-              <td>{{$data->likes}}</td>
+              <td>@if($data->likes) {{$data->likes}} @else Not Available @endif</td>
          </tr>
           @endforeach
         </tbody>

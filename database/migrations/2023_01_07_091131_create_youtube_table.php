@@ -19,10 +19,12 @@ class CreateYoutubeTable extends Migration
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->string('youtube_id')->nullable();
             $table->longText('channel_response')->nullable();
+            $table->longText('description')->nullable();
             $table->string('subscribers_count')->nullable();
             $table->string('video_count')->nullable();
             $table->string('channel_id')->nullable();
             $table->string('access_token')->nullable();
+            $table->string('average_engagement')->default(0);
             $table->timestamps();
             $table->softDeletes();
         });
